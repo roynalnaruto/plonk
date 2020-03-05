@@ -803,4 +803,39 @@ mod tests {
 
         assert_eq!(n, composer.circuit_size())
     }
+    #[test]
+    fn test_prover_bench_code() {
+        use crate::commitment_scheme::kzg10::SRS;
+        use bench_utils::*;
+        // cargo test test_prover_bench_code --features print-trace -- --nocapture
+        // THis code does not test srs generation or preprocessing
+        /*
+        Circuit contained just a simple add_gadget a+b-c = 0 repeated
+        2^13 -> 1.125 seconds
+        2^14 -> 1.803 seconds
+        2^15 -> 3.612 seconds
+        2^16 -> 7.394 seconds
+        2^17 -> 13.159  seconds
+        2^18 -> 25.400 seconds
+        2^19 -> 53.112 seconds
+        2^20 -> 102.850 seconds
+
+        */
+        let public_parameters =
+            SRS::setup(500_000usize.next_power_of_two(), &mut rand::thread_rng()).unwrap();
+        for i in 12..20 {
+            let mut composer: StandardComposer = add_dummy_composer(2usize.pow(i));
+            let (ck, _) = SRS::trim(&public_parameters, composer.n.next_power_of_two()).unwrap();
+            let domain = EvaluationDomain::new(composer.n).unwrap();
+            // Provers View
+            //
+            // setup transcript
+            let mut transcript = Transcript::new(b"");
+            // Preprocess circuit
+            let preprocessed_circuit = composer.preprocess(&ck, &mut transcript, &domain);
+            let init_time = start_timer!(|| "Start Proof");
+            let proof = composer.prove(&ck, &preprocessed_circuit, &mut transcript);
+            end_timer!(init_time);
+        }
+    }
 }
