@@ -6,7 +6,9 @@ use crate::constraint_system::Variable;
 use crate::fft::{EvaluationDomain, Evaluations, Polynomial};
 use crate::permutation::Permutation;
 use crate::transcript::TranscriptProtocol;
+use bench_utils::*;
 use bls12_381::Scalar;
+
 /// A composer is a circuit builder
 /// and will dictate how a circuit is built
 /// We will have a default Composer called `StandardComposer`
@@ -146,17 +148,6 @@ impl Composer for StandardComposer {
         let w_r_poly = Polynomial::from_coefficients_vec(domain.ifft(&w_r_scalar));
         let w_o_poly = Polynomial::from_coefficients_vec(domain.ifft(&w_o_scalar));
 
-        // Commit to witness polynomials
-        let w_l_poly_commit = commit_key.commit(&w_l_poly).unwrap();
-        let w_r_poly_commit = commit_key.commit(&w_r_poly).unwrap();
-        let w_o_poly_commit = commit_key.commit(&w_o_poly).unwrap();
-
-        // Add commitment to witness polynomials to transcript
-        transcript.append_commitment(b"w_l", &w_l_poly_commit);
-        transcript.append_commitment(b"w_r", &w_r_poly_commit);
-        transcript.append_commitment(b"w_o", &w_o_poly_commit);
-        //
-
         // 2. Compute permutation polynomial
         //
         //
@@ -166,6 +157,7 @@ impl Composer for StandardComposer {
         let gamma = transcript.challenge_scalar(b"gamma");
         //
         //
+        let perm_time = start_timer!(|| "perm poly");
         let z_poly = self.perm.compute_permutation_poly(
             &domain,
             &w_l_scalar,
@@ -173,12 +165,7 @@ impl Composer for StandardComposer {
             &w_o_scalar,
             &(beta, gamma),
         );
-        // Commit to permutation polynomial
-        //
-        let z_poly_commit = commit_key.commit(&z_poly).unwrap();
-        // Add commitment to permutation polynomials to transcript
-        transcript.append_commitment(b"z", &z_poly_commit);
-        //
+        end_timer!(perm_time);
         // 2. Compute public inputs polynomial
         let pi_poly = Polynomial::from_coefficients_vec(domain.ifft(&self.public_inputs));
         //
@@ -188,6 +175,8 @@ impl Composer for StandardComposer {
         // Compute quotient challenge; `alpha`
         let alpha = transcript.challenge_scalar(b"alpha");
         //
+
+        let quot_time = start_timer!(|| "quotient poly");
         let t_poly = quotient_poly::compute(
             &domain,
             &preprocessed_circuit,
@@ -196,26 +185,19 @@ impl Composer for StandardComposer {
             &pi_poly,
             &(alpha, beta, gamma),
         );
+        end_timer!(quot_time);
         // Split quotient polynomial into 3 degree `n` polynomials
         // XXX: This implicitly assumes that the quotient polynomial will never go over
         // degree 3n. For custom gates, this may not hold true, unless the API restricts it
         let (t_low_poly, t_mid_poly, t_hi_poly) = self.split_tx_poly(domain.size(), &t_poly);
-
-        // Commit to permutation polynomial
-        //
-        let t_low_commit = commit_key.commit(&t_low_poly).unwrap();
-        let t_mid_commit = commit_key.commit(&t_mid_poly).unwrap();
-        let t_hi_commit = commit_key.commit(&t_hi_poly).unwrap();
-        // Add commitment to quotient polynomials to transcript
-        transcript.append_commitment(b"t_lo", &t_low_commit);
-        transcript.append_commitment(b"t_mid", &t_mid_commit);
-        transcript.append_commitment(b"t_hi", &t_hi_commit);
 
         // 4. Compute linearisation polynomial
         //
         // Compute evaluation challenge; `z`
         let z_challenge = transcript.challenge_scalar(b"z");
         //
+        let lin_time = start_timer!(|| "lin poly");
+
         let (lin_poly, evaluations) = linearisation_poly::compute(
             &domain,
             &preprocessed_circuit,
@@ -226,16 +208,7 @@ impl Composer for StandardComposer {
             &t_poly,
             &z_poly,
         );
-        // Add evaluations to transcript
-        transcript.append_scalar(b"a_eval", &evaluations.proof.a_eval);
-        transcript.append_scalar(b"b_eval", &evaluations.proof.b_eval);
-        transcript.append_scalar(b"c_eval", &evaluations.proof.c_eval);
-        transcript.append_scalar(b"left_sig_eval", &evaluations.proof.left_sigma_eval);
-        transcript.append_scalar(b"right_sig_eval", &evaluations.proof.right_sigma_eval);
-        transcript.append_scalar(b"perm_eval", &evaluations.proof.perm_eval);
-        transcript.append_scalar(b"t_eval", &evaluations.quot_eval);
-        transcript.append_scalar(b"r_eval", &evaluations.proof.lin_poly_eval);
-        //
+        end_timer!(lin_time);
 
         // 5. Compute openings
         //
@@ -247,6 +220,7 @@ impl Composer for StandardComposer {
             &t_hi_poly,
             &z_challenge,
         );
+        let opening_time = start_timer!(|| "opening poly");
 
         // Compute W_z
         let aggregate_witness = commit_key.compute_aggregate_witness(
@@ -271,7 +245,6 @@ impl Composer for StandardComposer {
             &z_challenge,
             transcript,
         );
-        let w_z_comm = commit_key.commit(&aggregate_witness).unwrap();
 
         // Compute W_zx
         let shifted_witness = commit_key.compute_single_witness(
@@ -279,7 +252,21 @@ impl Composer for StandardComposer {
             &evaluations.proof.perm_eval,
             &(z_challenge * domain.group_gen),
         );
+        end_timer!(opening_time);
+
+        // Commit to Polynomials
+        let commit_time = start_timer!(|| "Time to commit");
+        let w_l_poly_commit = commit_key.commit(&w_l_poly).unwrap();
+        let w_r_poly_commit = commit_key.commit(&w_r_poly).unwrap();
+        let w_o_poly_commit = commit_key.commit(&w_o_poly).unwrap();
+        let t_low_commit = commit_key.commit(&t_low_poly).unwrap();
+        let t_mid_commit = commit_key.commit(&t_mid_poly).unwrap();
+        let t_hi_commit = commit_key.commit(&t_hi_poly).unwrap();
+        let z_poly_commit = commit_key.commit(&z_poly).unwrap();
+        let w_z_comm = commit_key.commit(&aggregate_witness).unwrap();
         let w_zx_comm = commit_key.commit(&shifted_witness).unwrap();
+        end_timer!(commit_time);
+
         //
         // Create Proof
         Proof {
@@ -806,7 +793,6 @@ mod tests {
     #[test]
     fn test_prover_bench_code() {
         use crate::commitment_scheme::kzg10::SRS;
-        use bench_utils::*;
         // cargo test test_prover_bench_code --features print-trace -- --nocapture
         // THis code does not test srs generation or preprocessing
         /*
@@ -821,21 +807,19 @@ mod tests {
         2^20 -> 102.850 seconds
 
         */
-        let public_parameters =
-            SRS::setup(500_000usize.next_power_of_two(), &mut rand::thread_rng()).unwrap();
-        for i in 12..20 {
-            let mut composer: StandardComposer = add_dummy_composer(2usize.pow(i));
-            let (ck, _) = SRS::trim(&public_parameters, composer.n.next_power_of_two()).unwrap();
-            let domain = EvaluationDomain::new(composer.n).unwrap();
-            // Provers View
-            //
-            // setup transcript
-            let mut transcript = Transcript::new(b"");
-            // Preprocess circuit
-            let preprocessed_circuit = composer.preprocess(&ck, &mut transcript, &domain);
-            let init_time = start_timer!(|| "Start Proof");
-            let proof = composer.prove(&ck, &preprocessed_circuit, &mut transcript);
-            end_timer!(init_time);
-        }
+        let public_parameters = SRS::setup(2usize.pow(14), &mut rand::thread_rng()).unwrap();
+
+        let mut composer: StandardComposer = add_dummy_composer(2usize.pow(13));
+        let (ck, _) = SRS::trim(&public_parameters, composer.n.next_power_of_two()).unwrap();
+        let domain = EvaluationDomain::new(composer.n).unwrap();
+        // Provers View
+        //
+        // setup transcript
+        let mut transcript = Transcript::new(b"");
+        // Preprocess circuit
+        let preprocessed_circuit = composer.preprocess(&ck, &mut transcript, &domain);
+        let init_time = start_timer!(|| "Start Proof");
+        let proof = composer.prove(&ck, &preprocessed_circuit, &mut transcript);
+        end_timer!(init_time);
     }
 }
