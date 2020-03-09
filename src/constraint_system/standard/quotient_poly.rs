@@ -5,6 +5,7 @@ use crate::constraint_system::standard::PreProcessedCircuit;
 use crate::fft::Evaluations;
 use crate::fft::{EvaluationDomain, Polynomial};
 use crate::permutation::grand_product_quotient;
+use bench_utils::*;
 use bls12_381::Scalar;
 use rayon::prelude::*;
 
@@ -70,8 +71,9 @@ pub(crate) fn compute(
     let t_4 =
         grand_product_quotient::compute_is_one_polynomial(domain, z_poly, alpha.square() * alpha);
     // Compute 4n evaluations for X^n -1
+    let v_time = start_timer!(|| "vanishing poly");
     let v_h_coset_4n = domain_4n.compute_vanishing_poly_over_coset(domain.size() as u64);
-
+    end_timer!(v_time);
     // XXX: We can compute the 4n evaluations for the vanishing polynomial in the preprocessing stage
     let quotient: Vec<_> = (0..domain_4n.size())
         .into_par_iter()
