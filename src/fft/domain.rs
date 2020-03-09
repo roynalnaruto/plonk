@@ -215,8 +215,9 @@ impl EvaluationDomain {
     ) -> Evaluations {
         assert!((self.size() as u64) > poly_degree);
         let coset_gen = GENERATOR.pow(&[poly_degree, 0, 0, 0]);
+        use rayon::iter::IntoParallelIterator;
         let v_h: Vec<_> = (0..self.size())
-            .into_iter()
+            .into_par_iter()
             .map(|i| {
                 (coset_gen * self.group_gen.pow(&[poly_degree * i as u64, 0, 0, 0]))
                     - &Scalar::one()
