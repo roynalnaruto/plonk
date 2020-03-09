@@ -5,7 +5,9 @@ use crate::fft::Polynomial;
 use crate::transcript::TranscriptProtocol;
 use crate::util::powers_of;
 
-use bls12_381::{multiscalar_mul::pippenger, G1Affine, G1Projective, G2Affine, G2Prepared, Scalar};
+use bls12_381::{
+    multiscalar_mul::msm_variable_base, G1Affine, G1Projective, G2Affine, G2Prepared, Scalar,
+};
 
 /// Verifier Key is used to verify claims made about a committed polynomial
 #[derive(Clone, Debug)]
@@ -66,11 +68,14 @@ impl ProverKey {
         // Check whether we can safely commit to this polynomial
         self.check_commit_degree_is_within_bounds(polynomial.degree())?;
 
+        // Convert powers of g from Affine to Project;
+        let proj: Vec<_> = self
+            .powers_of_g
+            .iter()
+            .map(|p| G1Projective::from(p))
+            .collect();
         // Compute commitment
-        let mut commitment = pippenger(
-            self.powers_of_g.iter().map(|P| G1Projective::from(P)),
-            polynomial.coeffs.to_owned().into_iter(),
-        );
+        let commitment = msm_variable_base(&proj, &polynomial.coeffs);
         Ok(Commitment::from_projective(commitment))
     }
 
