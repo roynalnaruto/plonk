@@ -11,7 +11,7 @@ data sets can be approximated; Langrangian polynomials,
 however, from a solution that fits data exactly. This is 
 achieved through *interpolation*, which finds a linear 
 combination of 'n' inputted functions with respect to a 
-given data set which imposes 'n' constrtiants and computes 
+given data set which imposes 'n' constraints and computes 
 an exact fitting solution. 
 
 Linear Algebra dictates that interpolation polynomial ought 
