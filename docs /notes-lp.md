@@ -5,7 +5,7 @@ Langrangian polynomials
 =======================
 
 Langrangian polynomials are introduced as a means of 
-constructing continuos functions from discrete data.
+constructing continous functions from discrete data.
 With alternative polynomial constructions, discrete 
 data sets can be approximated; Langrangian polynomials, 
 however, from a solution that fits data exactly. This is 
@@ -25,7 +25,7 @@ x^{n}} of the space of polynomials degree n\\+1 is valled the *monomial
 basis*, and the corresponding matrix A is called the *Vandermode
 matrix* for the points x\_0, x\_1,...,x\_n. 
 
-*Langrangian interpolation*, however, has th matrix A as he identity 
+*Langrangian interpolation*, however, has the matrix A as he identity 
 matrix. 
 This stems from writing the interpolating polynomial as
 
