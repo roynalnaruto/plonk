@@ -793,19 +793,19 @@ mod tests {
     #[test]
     fn test_prover_bench_code() {
         use crate::commitment_scheme::kzg10::SRS;
-        // cargo test test_prover_bench_code --features print-trace -- --nocapture
+        // cargo test test_prover_bench_code --release --features print-trace -- --nocapture
         // THis code does not test srs generation or preprocessing
         /*
         Circuit contained just a simple add_gadget a+b-c = 0 repeated
-        2^13 -> 1.574 seconds
-        2^14 -> 3.92 seconds
-        2^15 -> 5.898 seconds
-        2^16 -> 10.930 seconds
-        2^17 -> 22.1 seconds
-        2^18 -> 44.829 seconds
-        2^19 -> 87.953 seconds
-        2^20 -> 170.513 seconds
-        Benches obtained with Core I5 processor.
+        2^13 -> 891.1ms
+        2^14 -> 1.735s
+        2^15 -> 3.663s
+        2^16 -> 6.733s
+        2^17 -> 25.756s
+        2^18 -> 33.371s
+        2^19 -> 69.645s
+        2^20 -> 156.157s
+        Benches obtained with Core I7 processor.
         */
         for i in 13..=20 {
             let public_parameters = SRS::setup(1 << i, &mut rand::thread_rng()).unwrap();
@@ -819,9 +819,12 @@ mod tests {
             let mut transcript = Transcript::new(b"");
             // Preprocess circuit
             let preprocessed_circuit = composer.preprocess(&ck, &mut transcript, &domain);
+            dbg!(i - 1);
             let init_time = start_timer!(|| "Start Proof");
             let proof = composer.prove(&ck, &preprocessed_circuit, &mut transcript);
+            let _ = proof;
             end_timer!(init_time);
+            dbg!("end", i - 1);
         }
     }
 }
