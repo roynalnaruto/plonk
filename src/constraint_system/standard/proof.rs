@@ -312,9 +312,6 @@ impl Proof {
         scalars.push(y);
         points.push(preprocessed_circuit.out_sigma_comm().0);
 
-        // Convert points from Affine to Project;
-        let proj: Vec<_> = points.iter().map(|p| G1Projective::from(p)).collect();
-
-        Commitment::from_projective(msm_variable_base(&proj, &scalars))
+        Commitment::from_projective(msm_variable_base(&points, &scalars))
     }
 }

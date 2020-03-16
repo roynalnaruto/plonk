@@ -68,14 +68,8 @@ impl ProverKey {
         // Check whether we can safely commit to this polynomial
         self.check_commit_degree_is_within_bounds(polynomial.degree())?;
 
-        // Convert powers of g from Affine to Project;
-        let proj: Vec<_> = self
-            .powers_of_g
-            .iter()
-            .map(|p| G1Projective::from(p))
-            .collect();
         // Compute commitment
-        let commitment = msm_variable_base(&proj, &polynomial.coeffs);
+        let commitment = msm_variable_base(&self.powers_of_g, &polynomial.coeffs);
         Ok(Commitment::from_projective(commitment))
     }
 

@@ -797,29 +797,31 @@ mod tests {
         // THis code does not test srs generation or preprocessing
         /*
         Circuit contained just a simple add_gadget a+b-c = 0 repeated
-        2^13 -> 1.125 seconds
-        2^14 -> 1.803 seconds
-        2^15 -> 3.612 seconds
-        2^16 -> 7.394 seconds
-        2^17 -> 13.159  seconds
-        2^18 -> 25.400 seconds
-        2^19 -> 53.112 seconds
-        2^20 -> 102.850 seconds
-
+        2^13 -> 1.574 seconds
+        2^14 -> 3.92 seconds
+        2^15 -> 5.898 seconds
+        2^16 -> 10.930 seconds
+        2^17 -> 22.1 seconds
+        2^18 -> 44.829 seconds
+        2^19 -> 87.953 seconds
+        2^20 -> 170.513 seconds
+        Benches obtained with Core I5 processor.
         */
-        let public_parameters = SRS::setup(2usize.pow(14), &mut rand::thread_rng()).unwrap();
+        for i in 13..=20 {
+            let public_parameters = SRS::setup(1 << i, &mut rand::thread_rng()).unwrap();
 
-        let mut composer: StandardComposer = add_dummy_composer(2usize.pow(13));
-        let (ck, _) = SRS::trim(&public_parameters, composer.n.next_power_of_two()).unwrap();
-        let domain = EvaluationDomain::new(composer.n).unwrap();
-        // Provers View
-        //
-        // setup transcript
-        let mut transcript = Transcript::new(b"");
-        // Preprocess circuit
-        let preprocessed_circuit = composer.preprocess(&ck, &mut transcript, &domain);
-        let init_time = start_timer!(|| "Start Proof");
-        let proof = composer.prove(&ck, &preprocessed_circuit, &mut transcript);
-        end_timer!(init_time);
+            let mut composer: StandardComposer = add_dummy_composer(1 << (i - 1));
+            let (ck, _) = SRS::trim(&public_parameters, composer.n.next_power_of_two()).unwrap();
+            let domain = EvaluationDomain::new(composer.n).unwrap();
+            // Provers View
+            //
+            // setup transcript
+            let mut transcript = Transcript::new(b"");
+            // Preprocess circuit
+            let preprocessed_circuit = composer.preprocess(&ck, &mut transcript, &domain);
+            let init_time = start_timer!(|| "Start Proof");
+            let proof = composer.prove(&ck, &preprocessed_circuit, &mut transcript);
+            end_timer!(init_time);
+        }
     }
 }
