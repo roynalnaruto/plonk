@@ -25,7 +25,7 @@ x^{n}} of the space of polynomials degree n\\+1 is valled the *monomial
 basis*, and the corresponding matrix A is called the *Vandermode
 matrix* for the points x\_0, x\_1,...,x\_n. 
 
-*Langrangian interpolation*, however, has the matrix A as he identity 
+*Langrangian interpolation*, however, has the matrix A, as the identity 
 matrix. 
 This stems from writing the interpolating polynomial as
 
