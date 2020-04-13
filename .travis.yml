@@ -23,10 +23,10 @@ matrix:
   - rust: nightly
     install:
     script:
-      - cargo check
-      - cargo build --release --verbose --all
-      - cargo test --release --verbose --all
-      - cargo doc --no-deps
+      - cargo check --features nightly
+      - cargo build --release --verbose --all --features nightly
+      - cargo test --release --verbose --all --features nightly
+      - cargo doc --no-deps --features nightly
 
 # Send a notification to the Dusk build Status Telegram channel once the CI build completes
 # after_script:
