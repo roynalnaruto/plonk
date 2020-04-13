@@ -6,21 +6,28 @@ os:
 matrix:
   include:
   - rust: stable
+    install:
+    before_script:
+      - rustup component add clippy
+    script:
+      - cargo clippy -- -D warnings
+      - cargo check
+      - cargo build --release --verbose --all
+      - cargo test --release --verbose --all
   - rust: beta
-
-before_script:
-- rustup component add clippy 
-
-# Main build
-script:
-  # we want the build job to fail when encountering warnings
-  - cargo clippy -- -D warnings
-  - cargo check
-  - cargo build --release --verbose --all
-  - cargo test --release --verbose --all
-  - cargo doc --no-deps
-
+    install:
+    script:
+      - cargo check
+      - cargo build --release --verbose --all
+      - cargo test --release --verbose --all
+  - rust: nightly
+    install:
+    script:
+      - cargo check
+      - cargo build --release --verbose --all
+      - cargo test --release --verbose --all
+      - cargo doc --no-deps
 
 # Send a notification to the Dusk build Status Telegram channel once the CI build completes
-after_script:
-  - bash <(curl -s https://raw.githubusercontent.com/dusk-network/tools/master/bash/telegram_ci_notifications.sh)
+# after_script:
+#   - bash <(curl -s https://raw.githubusercontent.com/dusk-network/tools/master/bash/telegram_ci_notifications.sh)
