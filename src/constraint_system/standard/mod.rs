@@ -23,6 +23,7 @@ use bls12_381::Scalar;
 
 pub use composer::StandardComposer;
 pub use preprocessed_circuit::PreProcessedCircuit;
+#[allow(clippy::too_many_arguments)]
 
 /// Implementation of the standard PLONK proof system
 pub trait Composer {

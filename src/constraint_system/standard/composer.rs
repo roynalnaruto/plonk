@@ -510,7 +510,7 @@ impl StandardComposer {
     }
 
     /// Convert variables to their actual witness values.
-    pub(crate) fn to_scalars(&self, vars: &[Variable]) -> Vec<Scalar> {
+    pub fn to_scalars(&self, vars: &[Variable]) -> Vec<Scalar> {
         vars.par_iter().map(|var| self.variables[var]).collect()
     }
 
