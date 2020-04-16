@@ -259,17 +259,12 @@ impl Composer for StandardComposer {
         commit_key: &ProverKey,
         preprocessed_circuit: &PreProcessedCircuit,
         transcript: &mut dyn TranscriptProtocol,
+        w_l_scalar: Vec<Scalar>,
+        w_r_scalar: Vec<Scalar>,
+        w_o_scalar: Vec<Scalar>,
+        w_4_scalar: Vec<Scalar>,
     ) -> Proof {
         let domain = EvaluationDomain::new(self.n).unwrap();
-
-        //1. Compute witness Polynomials
-        //
-        // Convert Variables to Scalars
-        // XXX: Maybe there's no need to allocate `to_scalars` returning &[Scalar].
-        let w_l_scalar = self.to_scalars(&self.w_l);
-        let w_r_scalar = self.to_scalars(&self.w_r);
-        let w_o_scalar = self.to_scalars(&self.w_o);
-        let w_4_scalar = self.to_scalars(&self.w_4);
 
         // Witnesses are now in evaluation form, convert them to coefficients
         // So that we may commit to them
@@ -1709,6 +1704,84 @@ mod tests {
     }
 
     #[test]
+    fn test_multiple_proofs() {
+        let mut proofs: Vec<Proof> = Vec::new();
+        let public_parameters = PublicParameters::setup(500, &mut rand::thread_rng()).unwrap();
+
+        // Provers View
+        let public_inputs = {
+            // 1. Add circuit description
+            let mut composer: StandardComposer = add_dummy_composer(100);
+            composer.add_dummy_constraints();
+
+            //2. Compute commitment key
+            let (ck, _) = public_parameters
+                .trim(2 * composer.circuit_size().next_power_of_two())
+                .unwrap();
+
+            // 3. Compute Evaluation domain and transcript
+            let domain = EvaluationDomain::new(composer.circuit_size()).unwrap();
+            let mut transcript = Transcript::new(b"");
+
+            // 4. Preprocess circuit
+            let preprocessed_circuit = composer.preprocess(&ck, &mut transcript, &domain);
+
+            // Compute witness scalars
+            let w_l_scalar = composer.to_scalars(&composer.w_l);
+            let w_r_scalar = composer.to_scalars(&composer.w_r);
+            let w_o_scalar = composer.to_scalars(&composer.w_o);
+            let w_4_scalar = composer.to_scalars(&composer.w_4);
+
+            // 5. Create multiple proofs
+            for _ in 0..10 {
+                let mut transcript_clone = transcript.clone();
+                let mut new_composer = StandardComposer::new();
+
+                let proof_i = composer.prove(
+                    &ck,
+                    &preprocessed_circuit,
+                    &mut transcript_clone,
+                    w_l_scalar.clone(),
+                    w_r_scalar.clone(),
+                    w_o_scalar.clone(),
+                    w_4_scalar.clone(),
+                );
+                proofs.push(proof_i);
+            }
+            composer.public_inputs
+        };
+
+        // Verifiers View
+
+        // 1.  Add circuit description
+        let mut composer: StandardComposer = add_dummy_composer(100);
+        composer.add_dummy_constraints();
+
+        //2. Compute commitment and verification key
+        let (ck, vk) = public_parameters
+            .trim(composer.circuit_size().next_power_of_two())
+            .unwrap();
+
+        // 3. Compute Evaluation domain and transcript
+        let domain = EvaluationDomain::new(composer.circuit_size()).unwrap();
+        let mut transcript = Transcript::new(b"");
+
+        // 4. Preprocess circuit
+        let preprocessed_circuit = composer.preprocess(&ck, &mut transcript, &domain);
+
+        // 5. Verify multiple proofs
+        for proof in proofs.iter() {
+            let mut transcript_clone = transcript.clone();
+            let ok = proof.verify(
+                &preprocessed_circuit,
+                &mut transcript_clone,
+                &vk,
+                &public_inputs,
+            );
+            assert!(ok);
+        }
+    }
+    #[test]
     fn test_logic_xor_constraint() {
         // Should pass since the XOR result is correct and the bit-num is even.
         let ok = test_gadget(
@@ -2049,10 +2122,23 @@ mod tests {
 
             // Preprocess circuit
             let preprocessed_circuit = composer.preprocess(&ck, &mut transcript, &domain);
-            (
-                composer.prove(&ck, &preprocessed_circuit, &mut transcript),
-                composer.public_inputs,
-            )
+
+            // Compute witness scalars
+            let w_l_scalar = composer.to_scalars(&composer.w_l);
+            let w_r_scalar = composer.to_scalars(&composer.w_r);
+            let w_o_scalar = composer.to_scalars(&composer.w_o);
+            let w_4_scalar = composer.to_scalars(&composer.w_4);
+
+            let proof = composer.prove(
+                &ck,
+                &preprocessed_circuit,
+                &mut transcript,
+                w_l_scalar,
+                w_r_scalar,
+                w_o_scalar,
+                w_4_scalar,
+            );
+            (proof, composer.public_inputs)
         };
         // Verifiers view
         //

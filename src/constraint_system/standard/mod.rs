@@ -19,6 +19,7 @@ mod quotient_poly;
 use crate::commitment_scheme::kzg10::ProverKey;
 use crate::fft::EvaluationDomain;
 use crate::transcript::TranscriptProtocol;
+use bls12_381::Scalar;
 
 pub use composer::StandardComposer;
 pub use preprocessed_circuit::PreProcessedCircuit;
@@ -44,5 +45,9 @@ pub trait Composer {
         commit_key: &ProverKey,
         preprocessed_circuit: &PreProcessedCircuit,
         transcript: &mut dyn TranscriptProtocol,
+        w_l_scalar: Vec<Scalar>,
+        w_r_scalar: Vec<Scalar>,
+        w_o_scalar: Vec<Scalar>,
+        w_4_scalar: Vec<Scalar>,
     ) -> proof::Proof;
 }
