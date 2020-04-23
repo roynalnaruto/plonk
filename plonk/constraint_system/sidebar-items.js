@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["composer","The `Composer` is a Trait that is actually defining some kind of Circuit Builder for PLONK."],["variable","This module holds the components needed in the Constraint System. The two components used are Variables and Wires."]]});

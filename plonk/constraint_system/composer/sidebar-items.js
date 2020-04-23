@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["StandardComposer","A composer is a circuit builder and will dictate how a circuit is built We will have a default Composer called `StandardComposer`"]]});

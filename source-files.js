@@ -1,0 +1,3 @@
+var N = null;var sourcesIndex = {};
+sourcesIndex["plonk"] = {"name":"","dirs":[{"name":"commitment_scheme","dirs":[{"name":"kzg10","files":["errors.rs","key.rs","mod.rs","srs.rs"]}],"files":["mod.rs"]},{"name":"constraint_system","files":["composer.rs","mod.rs","variable.rs"]},{"name":"fft","files":["domain.rs","evaluations.rs","mod.rs","polynomial.rs"]},{"name":"permutation","files":["constants.rs","mod.rs","permutation.rs"]},{"name":"proof_system","dirs":[{"name":"widget","files":["arithmetic.rs","logic.rs","mod.rs","permutation.rs","range.rs"]}],"files":["linearisation_poly.rs","mod.rs","preprocessed_circuit.rs","proof.rs","quotient_poly.rs"]}],"files":["bit_iterator.rs","lib.rs","transcript.rs","util.rs"]};
+createSourceSidebar();

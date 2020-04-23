@@ -1,0 +1,326 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `prove_verify` mod in crate `plonk`."><meta name="keywords" content="rust, rustlang, rust-lang, prove_verify"><title>plonk::notes::prove_verify - Rust</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css"><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script src="../../../storage.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="shortcut icon" href="../../../favicon.ico"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc mod"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../../plonk/index.html'><div class='logo-container'><img src='../../../rust-logo.png' alt='logo'></div></a><p class='location'>Module prove_verify</p><div class="sidebar-elems"><p class='location'><a href='../../index.html'>plonk</a>::<wbr><a href='../index.html'>notes</a></p><script>window.sidebarCurrent = {name: 'prove_verify', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../../../settings.html"><img src="../../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class='fqn'><span class='out-of-band'><span id='render-detail'><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class='inner'>&#x2212;</span>]</a></span><a class='srclink' href='../../../src/plonk/lib.rs.html#60' title='goto source code'>[src]</a></span><span class='in-band'>Module <a href='../../index.html'>plonk</a>::<wbr><a href='../index.html'>notes</a>::<wbr><a class="mod" href=''>prove_verify</a></span></h1><div class='docblock'><p>This module contains the notes on 
+how the prover algorithm is 
+constructed for PLONK.</p>
+<h1 id="plonk-proof-construction" class="section-header"><a href="#plonk-proof-construction">PLONK proof construction</a></h1>
+<p>Following on from the generic
+SNARK construction, 
+here we will give the set up
+of a PLONK proof and show 
+which steps need to be satisfied
+to utilise the protocol.</p>
+<p>First we will explain the 
+derivation and simplification 
+of the arithmetic circuits. </p>
+<p>PLONK uses both gate constraints 
+and copy constraints, to collect 
+like expressions. Using the same
+example of:</p>
+<p>\[
+\mathbf{W}_<em>L</em> \cdot \mathbf{W}_<em>R</em> = \mathbf{W}_<em>O</em>,
+\]</p>
+<p>We can express multiples of the 
+same wires in or out of the same 
+gate, with the above equation.</p>
+<p>Thus we have 'ith' gates, so the 
+index from left or right across 
+the circuit is mitigated for 
+wires which are equal. </p>
+<p>For example, in the two equations:</p>
+<p>\[
+\begin{aligned}
+\mathbf{A}_<em>1</em> \circ X \cdot \mathbf{B}_<em>1</em> \circ \X^{2} 
+= \mathbf{C}_<em>1</em>\\
+and 
+\mathbf{A}_<em>2</em> \circ X^{2} \cdot \mathbf{B}_<em>2</em> \circ \X 
+= \mathbf{C}_<em>2</em>\\
+\end{aligned}
+\]</p>
+<p>We can state the equalities that: 
+\[
+\begin{aligned} 
+\mathbf{A}_<em>1</em> = \mathbf{B}_<em>2</em> \\
+&amp;\\
+\mathbf{B}_<em>1</em> = \mathbf{A}_<em>2</em> \\
+\end{aligned}
+\]</p>
+<p>These are examples of constraints 
+collected in PLONK. Which is done
+the same for addition gates, except
+the gate constrain satisfies:</p>
+<p>\[
+\mathbf{W}_<em>L</em> + \mathbf{W}_<em>R</em> = \mathbf{W}_<em>O</em>,
+\]</p>
+<p>PLONK also uses 'copy
+constraints', which are used to 
+associate wires, which have 
+equality, from the entire circuit.
+These constriants are checked 
+with a permutation argument. 
+In essence, this checks that 
+wires are not repeated by using 
+randomness given by the verifier. </p>
+<p>This process is better explained in 
+the permutation <a href="notes-pa">notes</a>.</p>
+<p>After the constraints
+are made, they are formatted into a 
+system of mumerical equations, 
+which in PLONK are reduced to a 
+small amount of polynomial 
+equations which are capable of 
+representing the constraints.
+PLONK allows us to combine the
+two gate equations by describing 
+their relationship relative to 
+the role in the circuit.
+PLONK also has constant, which
+are denoted as 'Q'. These 
+values will change for each 
+programme. The shape of 
+the circuit is defined by
+these When they are 
+combined with the gate 
+equations, we get the 
+polynomial equation for 
+a reduced form as:</p>
+<p>\[
+\begin{aligned}<br />
+<em>L</em> = left \\
+<em>R</em> = right \\
+<em>O</em> = output \\
+<em>M</em> = multiplication \\ 
+<em>C</em> = constants \\</p>
+<p>\mathbf{Q}_<em>L_i</em> \circ a_i +
+\mathbf{Q}_<em>R_i</em> \circ b_i +
+\mathbf{Q}_<em>0_i</em> \circ c_i +
+\mathbf{Q}_<em>M_i</em> \circ a_ib_i +
+\mathbf{Q}_<em>C_i</em> =
+0
+\end{aligned}
+\]
+This can be used for both
+addition and multiplication
+gates, where there values 
+can be provided by the user 
+depending on the circuit 
+composition. 
+For an addition gate, 
+we derive it as follows:</p>
+<p>\[
+\begin{aligned}
+\mathbf{Q}_<em>L_i</em> = 1
+\mathbf{Q}_<em>R_i</em> = 1
+\mathbf{Q}_<em>0_i</em> = -1
+\mathbf{Q}_<em>M_i</em> = 0
+\mathbf{Q}_<em>C_i</em> = 1
+\end{aligned}
+\]</p>
+<p>Which results in:
+\[
+\begin{aligned}<br />
+a_i +
+b_i -
+c_i =
+0
+\end{aligned}
+\]</p>
+<p>For a multiplication gate, 
+we derive it as follows:</p>
+<p>\[
+\begin{aligned}
+\mathbf{Q}_<em>L_i</em> = 0
+\mathbf{Q}_<em>R_i</em> = 0
+\mathbf{Q}_<em>0_i</em> = -1
+\mathbf{Q}_<em>M_i</em> = 1
+\mathbf{Q}_<em>C_i</em> = 0
+\end{aligned}
+\]</p>
+<p>Which results in:
+\[
+\begin{aligned}<br />
+a_ib_i -
+c_i =
+0
+\end{aligned}
+\]</p>
+<p>With this format, there is 
+a specific method used to 
+convert all the equations 
+into polynomials form.
+Basically, to bundling
+these together, PLONK can 
+take sets of equations and 
+turn them into one single 
+equation over polynomials. 
+This called the evalutaion 
+form. We are then able to 
+use Lagrangian interpolation
+to convert to coefificient form. 
+All this interpolation is doing
+is allowing us to evaluate a
+functions over specific points,
+for 'x' values, where the target
+polynomial is equal to '1' or 
+'0'.</p>
+<p>With these specific bases, we
+can derive the relation between 
+all sets of equations into one 
+single polynomial equation,
+where we have a vector of inputs
+to each gate type:
+\[
+\begin{aligned}
+\mathbf{Q}_<em>L</em>(<em>x</em>) \circ a(<em>x</em>) +
+\mathbf{Q}_<em>R</em>(<em>x</em>) \circ b(<em>x</em>) +
+\mathbf{Q}_<em>0</em>(<em>x</em>) \circ c(<em>x</em>) +
+\mathbf{Q}_<em>M</em>(<em>x</em>) \circ a(<em>x</em>)b(<em>x</em>) +
+\mathbf{Q}_<em>C</em>(<em>x</em>) =
+0
+\end{aligned}
+\]</p>
+<p>The utility for this in PLONK, 
+as a univeral SNARK, is that 
+any operation or relationship 
+that holds with the inputted 
+vectors, will also hold over 
+the polynomial.</p>
+<p>In order to check this in PLONK, 
+a 'vanishing polynomial' is 
+introduced. Which is just a 
+polynomial equal to zero for
+all the points we evaluate at.
+So this means that the vectors
+will be divisible by this vanishing
+polynomial, if the expression we 
+check does indeed hold. </p>
+<p>To summarise what the PLONK
+proof must satisfy:</p>
+<p>The generation of copy and 
+gate constraints where the 
+former are representative 
+of permuted wires. Generate 
+all of the polynomials to<br />
+be checked against the 
+vanishing polynomials.
+Take all of the wire values
+and convert them into three
+polynomials, A(x), B(x), C(x). 
+Check the polynomials at 
+some random Z(<em>z</em>), by making
+commitments and checking 
+the evaluation form. 
+Then commit all evalution 
+polynomials forms for the 
+verfier. </p>
+<h1 id="lagrangian-polynomials" class="section-header"><a href="#lagrangian-polynomials">Lagrangian polynomials</a></h1>
+<p>The use of polynomials in the 
+PLONK proving scheme refers
+to specific evaluation domains,
+named Lagrangian polynomials,<br />
+based on interpolation of two 
+functions of a particular group
+elements. The following section 
+gives a more comprehensive
+understanding to the way in 
+which these polynomials are 
+formed, given certain inputs. </p>
+<p>Langrangian polynomials are 
+introduced as a means of 
+constructing continous functions
+from discrete data. With alternative 
+polynomial constructions, discrete 
+data sets can be approximated; 
+Langrangian polynomials, however, 
+form a solution that fits data exactly.
+This is achieved through <em>interpolation</em>, 
+which finds a linear combination of 'n' 
+inputted functions with respect to a 
+given data set which imposes 'n' 
+constraints and computes 
+an exact fitting solution. </p>
+<p>Linear Algebra dictates that interpolation polynomial ought 
+to be formed from the system {\mathbf{A}{x}} = {\mathbf{b}}, 
+where b_i = y_i, i\ = 0,...,n\, and the entries of {\mathbf{A}} 
+are defined by {\mathbf{a}}_{\operatorname{ij}} = 
+{\mathbf{p}}{(x_i)},i\,j\ = 0,....,n, where x_0,x_1,...,x_n 
+are the points at which data y_o, y_1,...,y_n are obtained, and 
+{\mathbf{p_j}}{(x_i)} = x^{j}, j\ = 0,1,...,n. The basis {1,x\,...,
+x^{n}} of the space of polynomials degree n\+1 is valled the <em>monomial 
+basis</em>, and the corresponding matrix A is called the <em>Vandermode
+matrix</em> for the points x_0, x_1,...,x_n. </p>
+<p><em>Langrangian interpolation</em>, however, has the matrix A, as the identity 
+matrix. 
+This stems from writing the interpolating polynomial as</p>
+<p>\begin{aligned}
+{\mathbf{p_n }}{(x\)} = \sum_{j=0}^{n} y_i\mathcal{L}_n,j{(x)},
+\end{aligned}</p>
+<p>where the polynomials {\mathcal{L_n},_j(x_i)} have the property 
+that 
+\begin{aligned}
+{\mathcal{L_n},_j(x_i)}
+\begin{cases}
+1 &amp; \text{if $i$ = $j$}\
+0 &amp; \text{if $i$ \neq $j$}\</p>
+<p>\end{aligned}</p>
+<p>The polynomials {\mathcal{L_n},_j}, j\ = 0,...,n, are intertpolations
+of the points x_0, x_1,...,x_n. Theya are commonly called the 
+<em>Lagrangian polynomials</em>.
+They are wriiten in the form 
+\begin{aligned}
+{\mathcal{L_{n,j}(x) = \prod_{k=0 k\neqj}^{n} frac{(x-x_{k}){(x_{j}-x_{k})
+\end{aligned}</p>
+<p>the unique solution polynomial of degree 'n' that satisfies this 
+\begin{aligned}
+{\mathbf{p_n}}{(x_j)},i\,j\ = $f$(x_j), $j$ = 0,1,...1,n.
+\end{aligned}</p>
+<p>This polynomial, {\mathbf{p_n}}{(x_j)} is called the <em>interpolating
+polynomial</em> of $f$(x). </p>
+<p>To understand these as an expanded product argument, it can be written as</p>
+<p>Given a set of k + 1 data points</p>
+<p><a href="https://wikimedia.org/api/rest_v1/media/math/render/svg/5e4f064b4751bb32d87cc829aca1b2b2f38d4a6d">data points</a></p>
+<p>where no two<br />
+<a href="https://wikimedia.org/api/rest_v1/media/math/render/svg/5db47cb3d2f9496205a17a6856c91c1d3d363ccd">x_j</a> are the same, 
+the interpolation polynomial in the Lagrange form is a linear combination</p>
+<p><a href="https://wikimedia.org/api/rest_v1/media/math/render/svg/d07f3378ff7718c345e5d3d4a57d3053190226a0">Lagrange polynomial</a></p>
+<p>of Lagrange basis polynomials
+<a href="https://wikimedia.org/api/rest_v1/media/math/render/svg/6e2c3a2ab16a8723c0446de6a30da839198fb04b">Basis Polynomial</a></p>
+<h1 id="example" class="section-header"><a href="#example">Example</a></h1>
+<p>To find the unique <em>Lagranian interpolation</em> of polynomial p_3(x),
+with degree \leq 3, from the following set of data points:
+\documentclass{article}</p>
+<p>\begin{table}
+\begin{center}
+\label{Data points}
+\begin{tabular}{l|c|r} % &lt;-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+\textbf{Value 1} &amp; \textbf{Value 2} &amp; \textbf{Value 3}\
+$i$ &amp; $x_i$ &amp; $y_i$ \
+\hline
+0 &amp; -1 &amp; 3\
+1 &amp; 0 &amp; -4\
+2 &amp; 1 &amp; 5\
+3 &amp; 2 &amp; -6
+\end{tabular}
+\end{center}
+\end{table}</p>
+<p>In order to find this polynomial, we must construct the Lagrangian 
+of the form
+{\mathcal{L_{n,j}(x) = \prod_{i=0 i\neqj}^{n} frac{(x-x_{j}){(x_{j}-x_{i})</p>
+<p>Calculated as follows:</p>
+<p>$\mathcal{L}<em>{3,0}(x) = \frac{(x-x</em>{1})(x-x_{2})(x-x_{3})}{(x_{0}-x_{1})(x_{0}-x_{2})(x_{0}-x_{3})} = 
+\frac{(x-0)(x-1)(x-2)}{(-1-0)(-1-1)(-1-2)} = \frac{x(x^{2}-3x+2)}{(-1)(-2)(-3)} = -\frac{1}{6}(x^{3}-3x^{2}+2x)$</p>
+<p>$\mathcal{L}<em>{3,1}(x) = \frac{(x-x</em>{0})(x-x_{2})(x-x_{3})}{(x_{1}-x_{0})(x_{1}-x_{2})(x_{1}-x_{3})} = 
+\frac{(x+1)(x-1)(x-2)}{(0+1)(0-1)(0-2)} = \frac{(x^2-1)(x-2)}{(1)(-1)(-2)} = \frac{1}{2}(x^{3}-2x^{2}-x+2)$ </p>
+<p>$\mathcal{L}<em>{3,2}(x) = \frac{(x-x</em>{0})(x-x_{1})(x-x_{3})}{(x_{2}-x_{0})(x_{2}-x_{1})(x_{2}-x_{3})} = 
+\frac{(x+1)(x-0)(x-2)}{(1+1)(1-0)(1-2)} = \frac{x(x^2-x-2)}{(2)(1)(-1)} = -\frac{1}{2}(x^{3}-x^{2}-2x)$ </p>
+<p>$\mathcal{L}<em>{3,3}(x) = \frac{(x-x</em>{0})(x-x_{1})(x-x_{2})}{(x_{3}-x_{0})(x_{3}-x_{1})(x_{3}-x_{2})} = 
+\frac{(x+1)(x-0)(x-1)}{(2+1)(2-0)(2-1)} = \frac{x(x^2-1)}{(3)(2)(1)} = \frac{1}{6}(x^{3}-x)$ </p>
+<p>This provides the unique polynomial which fits the given data sets, 
+given by the interpolating polynomial</p>
+<p>$p_{3}(x) = \sum_{j=0}^{3}y_{j}\mathcal{L}<em>{3,j}(x) = y</em>{0}\mathcal{L}<em>{3,0}(x) + y</em>{1}\mathcal{L}<em>{3,1}(x) + y</em>{2}\mathcal{L}<em>{3,2}(x) + y</em>{3}\mathcal{L}_{3,3}(x) = 
+(3)(-\frac{1}{6})(x^{3}-3x^{2}+2x) + (-4)\frac{1}{2}(x^{3}-2x^{2}-x+2) + (5)(-\frac{1}{2})(x^{3}-x^{2}-2x) + (-6)\frac{1}{6}(x^{3}-x) = 
+(-\frac{1}{2})(x^{3}-3x^{2}+2x) + (-2)(x^{3}-2x^{2}-x+2) + (-\frac{5}{2})(x^{3}-x^{2}-2x) - (x^{3}-x) = 
+(-\frac{1}{2}-2-\frac{5}{2}-1)x^{3} + (\frac{3}{2} + 4 + \frac{5}{2})x^{2} + (-1+2+5+1)x - 4 = 
+-6x^{3}+8x^{2}+7x-4$</p>
+<p>Lagrangian polynomials are verifiable; if each x_{i}, for i\ \exist
+0...n, is substituted into p_{n}(x), then we obtain p_{n}(x_{i}) = 
+y_{i}.</p>
+</div></section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../../";window.currentCrate = "plonk";</script><script src="../../../aliases.js"></script><script src="../../../main.js"></script><script defer src="../../../search-index.js"></script></body></html>

@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["plonk"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/deref/trait.DerefMut.html\" title=\"trait core::ops::deref::DerefMut\">DerefMut</a> for <a class=\"struct\" href=\"plonk/fft/struct.Polynomial.html\" title=\"struct plonk::fft::Polynomial\">Polynomial</a>","synthetic":false,"types":["plonk::fft::polynomial::Polynomial"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["PreProcessedCircuit","`PreProcessedCircuit` is a data structure that holds the commitments to the selector and sigma polynomials."],["Proof","A Proof is a composition of `Commitments` to the witness, permutation, quotient, shifted and opening polynomials as well as the `ProofEvaluations`."]]});

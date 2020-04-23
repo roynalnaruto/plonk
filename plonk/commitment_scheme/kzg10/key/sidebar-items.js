@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["ProverKey","Prover key is used to commit to a polynomial which is bounded by the max_degree."],["VerifierKey","Verifier Key is used to verify claims made about a committed polynomial."]]});
