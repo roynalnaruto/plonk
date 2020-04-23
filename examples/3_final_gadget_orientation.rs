@@ -3,9 +3,11 @@
 extern crate bincode;
 #[macro_use]
 extern crate lazy_static;
+extern crate bench_utils;
 extern crate merlin;
 extern crate plonk;
 
+use bench_utils::*;
 use bls12_381::Scalar;
 use merlin::Transcript;
 use plonk::commitment_scheme::kzg10::{ProverKey, PublicParameters, VerifierKey};
@@ -74,21 +76,26 @@ fn gadget_builder(composer: &mut StandardComposer, inputs: &[Scalar], final_resu
 }
 
 fn elaborate_proof(composer: &mut StandardComposer, transcript: &mut Transcript) -> Proof {
-    composer.prove(&PROVER_KEY, &PREPROCESSED_CIRCUIT, transcript)
+    let init_time = start_timer!(|| "Proof construction");
+    let proof = composer.prove(&PROVER_KEY, &PREPROCESSED_CIRCUIT, transcript);
+    end_timer!(init_time);
+    proof
 }
 
 fn verify_proof(proof: &Proof, pub_input: Scalar) -> bool {
     let mut verif_transcript = Transcript::new(b"Gadget-Orientation-Is-Cool");
     let zero = Scalar::zero();
-
-    proof.verify(
+    let sec_time = start_timer!(|| "Proof Verification");
+    let res = proof.verify(
         &PREPROCESSED_CIRCUIT,
         &mut verif_transcript,
         &VERIFIER_KEY,
         &[
             zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, pub_input,
         ],
-    )
+    );
+    end_timer!(sec_time);
+    res
 }
 
 fn start_proving(inputs: &[Scalar], final_result: Scalar) -> Proof {
@@ -116,6 +123,7 @@ fn main() {
 
     // Verify it is as easy as
     assert!(verify_proof(&proof, pub_input) == true);
+    println!("¡Proof Verified succesfully!\n");
 
     //
     //
@@ -130,5 +138,9 @@ fn main() {
     let ko_proof: Proof = bincode::deserialize(&ko_proof_data).unwrap();
 
     assert!(verify_proof(&ok_proof, pub_input) == true);
+    println!("¡Correct Proof (previously serialized) was verified succesfully!\n");
     assert!(verify_proof(&ko_proof, pub_input) == false);
+    println!(
+        "¡Incorrect Proof (previously serialized) was verified unsuccesfully as we expected!\n"
+    );
 }

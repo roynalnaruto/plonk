@@ -27,6 +27,7 @@ criterion = "0.3.0"
 rand = "0.7.0"
 bincode = "1"
 lazy_static = "1.4.0"
+bench-utils = { git = "https://github.com/scipr-lab/zexe/" }
 
 # Criterion benchmarks
 [[bench]]
@@ -43,3 +44,4 @@ rustdoc-args = [
 [features]
 nightly = []
 default = ["serde"]
+print-trace = [ "bench-utils/print-trace" ]
